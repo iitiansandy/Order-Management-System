@@ -27,7 +27,7 @@ const Authentication = function (req, res, next) {
     }
 
     
-    jwt.verify(token, "GaragePlug", function (err, decoded) {
+    jwt.verify(token, "orderm@n@gement", function (err, decoded) {
       if (err) {
         return res.status(401).send({ status: false, message: "Invalid Token" });
       }

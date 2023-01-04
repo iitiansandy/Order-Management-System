@@ -91,7 +91,7 @@ let login = async (req, res) => {
         iat: createTime,
         exp: expTime,
       },
-      "GaragePlug"
+      "orderm@n@gement"
     );
 
     res.setHeader("x-api-key", token);
