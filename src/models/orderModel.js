@@ -3,10 +3,25 @@ const ObjectId = mongoose.Schema.Types.ObjectId
 
 const orderSchema = new mongoose.Schema({
 
-    customerId: { type: ObjectId, required: true, ref: 'User' },
-    orderNumber: {type:Number,required:true},
-    totalPrice: { type: Number, required: true },
-    discount:{ type: Number}
-}, { timestamps: true })
+    customerId:{
+        type: ObjectId,
+        ref: "customer"
+    },
+    product:{
+        type:String,
+        require:true
+    },
+    price:{
+        type:Number,
+
+    },
+    totalOrder:{
+        type:Number
+    },
+    discount:{
+        type:Number,
+        default:0
+    }
+},{timestamps:true})
 
 module.exports = mongoose.model('Order', orderSchema);

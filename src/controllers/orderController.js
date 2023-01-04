@@ -1,6 +1,7 @@
+const mongoose = require("mongoose")
 const orderModel = require("../models/orderModel");
-const validator = require("../utils/validator");
 const customerModel = require("../models/customerModel");
+const cron = require("node-cron");
 
 
 
@@ -9,56 +10,73 @@ const customerModel = require("../models/customerModel");
 
 
 const createOrder = async (req, res) => {
-  try {
-    let data = req.body;
+    try {
+        let data = req.body
+        await orderModel.updateMany()
+        let { customerId, price, product } = data
+        if (!customerId || !price || !product) {
+            return res.status(400).json({ status: false, msg: "Please fill all field properly" })
+        }
+        if (!mongoose.isValidObjectId(customerId)) {
+            return res.status(400).send({ status: false, msg: "invalid customerid" })
+        }
 
-    if (!validator.isValidRequest(data)) return res.status(400).send({ status: false, message: "Body can not be empty" });
-    let { customerId, orderNumber, totalPrice } = data;
+        let existCustomer = await customerModel.findById({ _id: customerId })
+        if (!existCustomer) {
+            return res.status(400).send({ status: false, msg: "Customer not exist" })
+        }
 
-    let customerIdData=await customerModel.findOne({_id:customerId});
-    if(customerIdData.length==0){
-        return res.status(404).send({ status: false, message: "No customer Found" });
-      }
+        let discount = 0
+        // let catageroy= "Regular"
 
-      if(isNaN(orderNumber) || orderNumber<=0){
-        return res.status(400).send({ status: false, message: "Enter a valid number of orders" });
-      }
+        let numberOfOrders = await orderModel.find({ customerId: data.customerId })
+        let totalOrder = numberOfOrders.length + 1
+        //console.log(totalOrder)
 
-    if(isNaN(totalPrice) || totalPrice<=0){
-        return res.status(400).send({ status: false, message: "Enter valid price" });
-      }
-      let discount=0;
-      let category ="Regular";
-      let totalOrders = customerIdData.totalOrders
-      
-      totalOrders=Number(totalOrders)+Number(orderNumber)
-      
-      if(totalOrders<10){
-        discount = 0 ;
-        totalPrice=totalPrice;
-      }
-      else if(totalOrders>=10 && totalOrders<20){
-        discount = (totalPrice*10)/100;
-        category='Gold';
-        totalPrice = (totalPrice*90)/100;
-      }
-      else{
-        discount = (totalPrice*20)/100;
-        category='Platinum'
-        totalPrice = (totalPrice*80)/100;
-      }
+        data.totalOrder = totalOrder
+        //console.log(data)
 
+        if (totalOrder == 9) {
+            // Alert.AlertGold()    // informing customer they are getting Gold membership
+            cron.schedule('* * * * *', () => {
+                console.log(" HURRRAYYY!!!!   You have only one order left to become GOLD customer!!! Hurry up and get 10% discount on every order ")
+            })
+        }
 
-      await customerModel.findByIdAndUpdate({_id:customerIdData._id},{$set:{category,totalOrders:(Number(totalOrders))},discount:Number(customerIdData.discount)+Number(discount),});
+        if (totalOrder == 10) {
+            await customerModel.findOneAndUpdate({ _id: data.customerId }, {  category: "Gold" }, { new: true })
+        }
 
-      data.discount=discount;
-      let orderData = await orderModel.create(data);
-      return res.status(201).send({status:true,message:orderData})
-  }
-  catch (err)
-    {
-      return res.status(500).send({ status: false, message: "Error occcured : " + err });
+        if (totalOrder > 10 && totalOrder < 20) {
+            discount = price * 10 / 100
+            price = price - discount
+        }
+        if (totalOrder == 19) {
+            // Alert.AlertPlatinum()
+
+            cron.schedule('* * * * *', () => {
+                console.log(" HURRRAYYY!!!!   You have only one order left to become PLATINUM customer!!! Hurry up and get 20% discount on every order ")
+            })
+
+        }
+
+        if (totalOrder == 20) {
+            await customerModel.findOneAndUpdate({ _id: data.customerId }, { category: "platinum" }, { new: true })
+        }
+        if (totalOrder > 20) {
+            discount = price * 20 / 100
+            price = price - discount
+        }
+        data.discount = discount
+        data.price = price
+
+        let order = await orderModel.create(data)
+        return res.status(201).send({ status: true, data: order })
+
+    } catch (err) {
+        return res.status(500).send({ status: false, msg: err.message })
     }
 }
 
-module.exports={createOrder}
+
+module.exports = { createOrder }

@@ -1,7 +1,8 @@
 const customerModel = require("../models/customerModel");
-const validator = require("../utils/validator");
 const bcrypt=require('bcrypt');
 const jwt = require("jsonwebtoken");
+const { isValidBody, isValidstring, isValidEmail, isValidphone, isValidPassword } = require("../utils/validator");
+
 
 
 
@@ -9,54 +10,63 @@ const jwt = require("jsonwebtoken");
 
 
 
+
 const register = async (req, res) => {
-  try {
-    let data = req.body;
+    try {
+        let data = req.body
+        if (!isValidBody(data)) {
+            return res.status(400).send({ status: false, mag: " Enter data in body" })
+        }
 
-    // VALIDATIONS STARTS
-    if (!validator.isValidRequest(data)) return res.status(400).send({ status: false, message: "Body can not be empty" });
+        let { name, email, phone, age, password, gender, category } = data
 
-    let { name, email, phone, password } = data;
+        if (!name || !email|| !phone||!age ||!password|| !gender) {
+            return res.status(400).send({ status: false, mag: "please fill all field properly" })
+        }
 
-    if (!validator.isValidValue(name)) return res.status(400).send({ status: false, message: "Name is required" });
+        if (!isValidstring(name)) {
+            return res.status(400).send({ status: false, mag: " name should be in onlyalphabate" })
+        }
 
-    if (!validator.isValidName(name)) return res.status(400).send({status: false,message:"Name may contain only letters. Digits & Spaces are not allowed "});
+        if (!isValidEmail(email)) {
+            return res.status(400).send({ status: false, mag: " invalid Email" })
+        }
 
+        let uniqueEmail = await customerModel.findOne({ email: email })
+        if (uniqueEmail) {
+            return res.status(422).send({ status: false, mag: " this email already exist" })
+        }
 
-    if (!validator.isValidValue(email)) return res.status(400).send({ status: false, message: "Email is required" });
+        if (!isValidphone(phone)) {
+            return res.status(400).send({ status: false, mag: " invalid phone" })
+        }
 
-    if (!validator.isValidEmail(email)) return res.status(400).send({ status: false, message: "Entered email is invalid" });
+        let arr = ["Male", "Female"]
+        if (!arr.includes(gender)) {
+            return res.status(400).send({ status: false, mag: " gender should be enum  Male or Female" })
+        }
+        if (category) {
+            let array = ["Regular", "Gold", "Platinum"]
+            if (!array.includes(category)) {
+                return res.status(400).send({ status: false, mag: ` category should be enum  ["Regular", "Gold", "Platinum"] only` })
+            }
+        }
+     
+        if (!isValidPassword(password)) {
+            return res.status(400).send({ status: false, msg: " password contain atleast one spacial character, Number, Alphabet, length should be 8 to 15 " })
+        }
 
-    let emailExist = await customerModel.findOne({ email });
-    if (emailExist) return res.status(400).send({ status: false, message: "This email already exists" });
+        data.password = bcrypt.hashSync(password, 10)
 
-    if (!validator.isValidValue(phone)) return res.status(400).send({ status: false, message: "Phone is required" });
+        let savedData = await customerModel.create(data)
+        return res.status(201).send({ status: true, data: savedData })
 
-    if (!validator.isValidPhone(phone)) return res.status(400).send({ status: false, message: "Entered phone number is invalid" });
-
-    let phoneExist = await customerModel.findOne({ phone });
-    if (phoneExist) return res.status(400).send({ status: false, message: "Phone number already exists" });
-
-    if (!validator.isValidValue(password)) {
-      return res.status(400).send({ status: false, message: "password is required" });
+    } catch (err) {
+        return res.status(500).send({ status: false, msg: err.message })
     }
 
-    if (password.length < 8 || password.length > 15) return res.status(400).send({status: false, message: "password length should be between 8 to 15"});
 
-    data.password = bcrypt.hashSync(password,10);
-    data.totalOrders=0;
-    data.discount=0;
-    let savedData = await customerModel.create(data);
-    savedData=savedData.toObject()
-    delete savedData.password
-    return res.status(201).send({ status: true, message: "Data created", Data: savedData });
-  } 
-  catch (err) {
-    {
-      return res.status(500).send({ status: false, message: "Error occcured : " + err });
-    }
-  }
-};
+}
 
 
 
@@ -64,42 +74,44 @@ const register = async (req, res) => {
 
 
 
-let login = async (req, res) => {
-  try {
-    let data = req.body;
-    const { email, password } = data;
+const login = async (req, res) => {
+    try {
+        let credentials = req.body
 
-    if (!validator.isValidRequest(data)) return res.status(400).send({ status: false, message:"Enter email & password"});
+        let { userName, password } = credentials
+        password = password.trim()
+        userName = userName.trim()
+        if (!isValidBody(credentials)) {
+            return res.status(400).send({ status: false, msg: "Body should not be empty" })
+        }
+        if (!userName || !password) {
+            return res.status(400).send({ status: false, msg: "Enter userName and password" })
+        }
 
-    if (!validator.isValidValue(email)) return res.status(400).send({ status: false, messgage: "Enter Email" });
-    let checkemail = await customerModel.findOne({ email: email });
-    if (!checkemail) return res.status(404).send({ status: false, message: "Email not found" });
+        let customer = await customerModel.findOne({ email: userName })
+        if (!customer) {
+            return res.status(400).send({ status: false, msg: "userName not exist" })
+        }
+        let valid = await bcrypt.compare(password, customer.password)
+        if (!valid) {
+            return res.status(201).send({ status: false, msg: " userName or password wrong" })
+        }
 
-    if (!validator.isValidValue(password)) return res.status(400).send({ status: false, messsge: "Enter Password"});
-    // Load hash from your password DB.
-    let decryptPassword = await bcrypt.compare(password, checkemail.password);
-    if (!decryptPassword) return res.status(401).send({ status: false, message: "Password is not correct" });
+        let token = jwt.sign({
+            _id: customer._id.toString(),
+            iat: Math.floor(Date.now() / 1000),
+            exp: Math.floor(Date.now() / 1000) * 60 * 60 * 24  // 24 hours
+        }, "orderManagement")
 
-    //GENERATE TOKEN
-    let date = Date.now();
-    let createTime = Math.floor(date / 1000);
-    let expTime = createTime + 30000;
+        res.setHeader("axe-api-key", token)
 
-    let token = jwt.sign(
-      {
-        customerId: checkemail._id.toString(),
-        iat: createTime,
-        exp: expTime,
-      },
-      "orderm@n@gement"
-    );
+        credentials.token = token
+        delete credentials.password
+        return res.status(200).send({ status: true, msg: "Login successfully", data: credentials })
 
-    res.setHeader("x-api-key", token);
-    return res.status(200).send({status: true,message: "Login successful",data:{ customerId: checkemail._id, token: token}});
-  } catch (err) {
-    res.status(500).send({ status: false, message: err.message });
-  }
-};
+    } catch (err) {
+        return res.status(500).send({ status: false, msg: err.message })
+    }
+}
 
-
-module.exports ={register,login}
+module.exports = { register, login }

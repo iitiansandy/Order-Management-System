@@ -9,39 +9,64 @@ const validator = require("../utils/validator");
 
 
 
-const Authentication = function (req, res, next) {
-  try {
-    if(!req.headers.authorization) {
-        return res.status(401).send({ status: false, message: "Missing authentication token in request " });
-      }
+// const Authentication = function (req, res, next) {
+//   try {
+//     if(!req.headers.authorization) {
+//         return res.status(401).send({ status: false, message: "Missing authentication token in request " });
+//       }
 
-    let token = req.headers.authorization.split(" ")[1]
+//     let token = req.headers.authorization.split(" ")[1]
 
-    const decoded = jwt.decode(token);
+//     const decoded = jwt.decode(token);
    
-    if (!decoded) {
-      return res.status(401).send({ status: false, message: "Invalid authentication token in request headers " })
-    }
-    if (Date.now() > (decoded.exp) * 1000) {
-      return res.status(401).send({ status: false, message: "Session expired! Please login again " })
-    }
+//     if (!decoded) {
+//       return res.status(401).send({ status: false, message: "Invalid authentication token in request headers " })
+//     }
+//     if (Date.now() > decoded.exp * 1000) {
+//       return res.status(401).send({ status: false, message: "Session expired! Please login again " })
+//     }
 
     
-    jwt.verify(token, "orderm@n@gement", function (err, decoded) {
-      if (err) {
-        return res.status(401).send({ status: false, message: "Invalid Token" });
-      }
-      else {
-        req.customerId = decoded.customerId;
-        return next();
-      }
-    });
+//     jwt.verify(token, "orderm@n@gement", function (err, decoded) {
+//       if (err) {
+//         return res.status(401).send({ status: false, message: "Invalid Token" });
+//       }
+//       else {
+//         req.customerId = decoded.customerId;
+//         return next();
+//       }
+//     });
 
+//   }
+//   catch (error) {
+//     res.status(500).send({ status: false, message: error.message });
+//   }
+// };
+
+
+const Authentication = async function (req, res, next) {
+  try {
+      let token = req.headers["x-api-key"]
+      if (!token) req.headers["X-Api-Key"]
+      if (!token) return res.status(400).send({ status: false, message: "Token must be present in header" })
+      jwt.verify(token, "orderm@n@gement", { ignoreExpiration: true }, function (err, decoded) {
+          if (err) { return res.status(400).send({ status: false, meessage: "token invalid" }) }
+          else {
+              //The static Date.now() method returns the number of milliseconds elapsed since January 1, 1970
+              if (Date.now() > decoded.exp * 1000) {
+                  return res.status(401).send({ status: false, msg: "Session Expired! Please login again", });
+              }
+          }
+          // req.userId = decoded.userId;
+          // console.log(decoded.userId)
+          next();
+      });
   }
-  catch (error) {
-    res.status(500).send({ status: false, message: error.message });
+  catch (err) {
+      return res.status(500).send({ status: false, message: err.message })
   }
-};
+}
+
 
 
 

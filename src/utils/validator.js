@@ -1,37 +1,24 @@
-const mongoose = require('mongoose')
+// const mongoose = require('mongoose')
 
-//request body validation
-const isValidRequest = (value) => Object.keys(value).length > 0;
-
-//value validation
-const isValidValue = function (value) {
-  if (typeof value === "undefined" || value === null) return false;
-  if (typeof value === "string" && value.trim().length === 0) return false;
-  if (typeof value === "number") return false;
-  return true;
-};
-const isValidNumber = function (value) {
-  if (Number(value) && value!== NaN) return true;
-  return false;
-};
-
-const isValidObjectId = function(value){
-  return mongoose.isValidObjectId(value)
+function isValidBody(data){
+  return Object.keys(data).length!=0
 }
 
-
-const isValidName = function(value){
-  return /^\w[a-zA-Z]*$/.test(value)
+function isValidstring(str){
+  return (/^[a-zA-Z]*$/.test(str.trim()))
 }
 
-const isValidEmail = function(value){
-  return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(value)
+function isValidEmail(email){
+  return (/^([0-9a-z]([-_\\.]*[0-9a-z]+)*)@([a-z]([-_\\.]*[a-z]+)*)[\\.]([a-z]{2,9})+$/.test(email))
 }
 
-const isValidPhone = function(value){
-  return /^[6-9]\d{9}$/.test(value)
+function isValidphone(phone){
+  return (/^[6-9]\d{9}$/.test(phone))
 }
 
+function isValidPassword(password){
+  return (/^(?=.*[0-9])(?=.*[!@#$%^&*])[a-zA-Z0-9!@#$%^&*]{8,15}$/.test(password))
 
+}
 
-module.exports={isValidRequest, isValidValue ,isValidNumber , isValidObjectId, isValidName, isValidEmail, isValidPhone}
+module.exports = {isValidBody, isValidstring, isValidEmail, isValidphone, isValidPassword}
