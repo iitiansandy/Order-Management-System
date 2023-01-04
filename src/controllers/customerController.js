@@ -3,6 +3,12 @@ const validator = require("../utils/validator");
 const bcrypt=require('bcrypt');
 const jwt = require("jsonwebtoken");
 
+
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++ Create Customer +++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+
+
 const register = async (req, res) => {
   try {
     let data = req.body;
@@ -53,6 +59,8 @@ const register = async (req, res) => {
 };
 
 
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++ Login Customer +++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 
 

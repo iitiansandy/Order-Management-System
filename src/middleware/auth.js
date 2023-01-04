@@ -3,7 +3,12 @@ const jwt = require("jsonwebtoken");
 const customerModel = require("../models/customerModel");
 const validator = require("../utils/validator");
 
-/**********************************************AUTHENTICATION*******************************************/
+
+
+/********************************************** AUTHENTICATION *******************************************/
+
+
+
 const Authentication = function (req, res, next) {
   try {
     if(!req.headers.authorization) {
@@ -40,7 +45,9 @@ const Authentication = function (req, res, next) {
 
 
 
-/**********************************************AUTHORIZATION*******************************************/
+/********************************************** AUTHORIZATION *******************************************/
+
+
 
 const Authorization = async (req,res,next) =>{
 

@@ -3,6 +3,11 @@ const validator = require("../utils/validator");
 const customerModel = require("../models/customerModel");
 
 
+
+/* +++++++++++++++++++++++++++++++++++++++++++++++++++++ Create Order +++++++++++++++++++++++++++++++++++++++++++++++++++ */
+
+
+
 const createOrder = async (req, res) => {
   try {
     let data = req.body;
